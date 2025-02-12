@@ -8,5 +8,3 @@ To start the application, run the following command:
 ```bash
 python3 main.py
 ```
-
-The application will be available at `http://localhost:3000`.
