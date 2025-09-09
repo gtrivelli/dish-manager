@@ -13,7 +13,7 @@ class DishManager(QWidget):
         self.layout = QVBoxLayout()
         self.modal = None
 
-        self.label = QLabel("Filter by tag:")
+        self.label = QLabel("Search dishes:")
         self.layout.addWidget(self.label)
         
         self.filter_input = QLineEdit()
@@ -77,5 +77,10 @@ class DishManager(QWidget):
         filter_text = self.filter_input.text().lower()
         self.dish_list.clear()
         for dish in self.dishes:
-            if any(filter_text in tag.lower() for tag in dish["tags"]):
-                self.dish_list.addItem(f"{dish['name']} ({', '.join(dish['tags'])})")
+            # Search in dish name OR in any tag
+            name_match = filter_text in dish["name"].lower()
+            tag_match = any(filter_text in tag.lower() for tag in dish["tags"])
+            
+            if name_match or tag_match:
+                sorted_tags = sorted(dish['tags'])
+                self.dish_list.addItem(f"{dish['name']:<50} ({', '.join(sorted_tags)})")
