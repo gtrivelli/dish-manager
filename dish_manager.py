@@ -48,8 +48,20 @@ class DishManager(QWidget):
         self.modal.show()
 
     def open_edit_dish_modal(self, item):
-        self.modal = EditDishModal(self, item)
-        self.modal.show()
+        # Extract dish name from the item text (format: "DishName<spaces> (tags)")
+        item_text = item.text()
+        dish_name = item_text.split('(')[0].strip()
+        
+        # Find the dish in the original dishes array by name
+        dish_index = None
+        for i, dish in enumerate(self.dishes):
+            if dish['name'] == dish_name:
+                dish_index = i
+                break
+        
+        if dish_index is not None:
+            self.modal = EditDishModal(self, dish_index)
+            self.modal.show()
 
     def remove_dish(self):
         selected_items = self.dish_list.selectedItems()

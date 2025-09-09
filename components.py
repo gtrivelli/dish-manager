@@ -51,12 +51,11 @@ class RecipeComponent(QWidget):
         layout.addWidget(self.recipe_edit)  
 
 class EditDishModal(TagComponent, RecipeComponent):
-    def __init__(self, manager, item):
+    def __init__(self, manager, dish_index):
         super().__init__()
         self.manager = manager
-
-        index = self.manager.dish_list.row(item)
-        self.dish = self.manager.dishes[index]
+        self.dish_index = dish_index
+        self.dish = self.manager.dishes[dish_index]
 
         self.setWindowTitle("Edit Dish")
         self.layout = QVBoxLayout()
@@ -84,8 +83,7 @@ class EditDishModal(TagComponent, RecipeComponent):
         self.setLayout(self.layout)
 
     def save_dish(self):
-        index = self.manager.dish_list.row(self.manager.dish_list.selectedItems()[0])
-        self.manager.dishes[index] = {
+        self.manager.dishes[self.dish_index] = {
             "name": self.dish_name.text(),
             "tags": [self.tag_list.item(i).text() for i in range(self.tag_list.count())],
             "recipe": self.recipe_edit.toPlainText()
