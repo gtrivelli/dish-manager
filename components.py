@@ -58,6 +58,11 @@ class EditDishModal(TagComponent, RecipeComponent):
         self.dish = self.manager.dishes[dish_index]
 
         self.setWindowTitle("Edit Dish")
+        
+        # FORCE ABSOLUTE POSITIONING - CENTER OF SCREEN
+        self.setGeometry(300, 150, 800, 600)
+        self.setFixedSize(800, 600)
+        
         self.layout = QVBoxLayout()
         self.container_layout = QHBoxLayout()
 
@@ -98,6 +103,11 @@ class AddDishModal(TagComponent, RecipeComponent):
         self.manager = manager
 
         self.setWindowTitle("Add Dish")
+        
+        # FORCE ABSOLUTE POSITIONING - CENTER OF SCREEN  
+        self.setGeometry(300, 150, 800, 600)
+        self.setFixedSize(800, 600)
+        
         self.layout = QVBoxLayout()
         self.container_layout = QHBoxLayout()
 
