@@ -1,7 +1,6 @@
 import sys
 import os
 from PyQt6.QtWidgets import QApplication
-from dish_manager import DishManager
 from dotenv import load_dotenv
 
 if __name__ == "__main__":
@@ -13,6 +12,9 @@ if __name__ == "__main__":
     
     app = QApplication(sys.argv)
     
-    window = DishManager()
+    # Import here to avoid circular imports
+    from main_menu import MainMenu
+    
+    window = MainMenu()
     window.show()
     sys.exit(app.exec())

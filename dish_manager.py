@@ -291,6 +291,17 @@ class DishManager(QWidget):
         list_layout.setContentsMargins(15, 15, 15, 15)
         list_layout.setSpacing(15)
         
+        # Header with back to menu button
+        header_layout = QHBoxLayout()
+        
+        back_to_menu_button = QPushButton("← Back to Menu")
+        back_to_menu_button.setProperty("class", "secondary")
+        back_to_menu_button.clicked.connect(self.back_to_menu)
+        header_layout.addWidget(back_to_menu_button)
+        
+        header_layout.addStretch()
+        list_layout.addLayout(header_layout)
+        
         # Search input directly in main layout
         self.filter_input = QLineEdit()
         self.filter_input.setPlaceholderText("Search dishes by name or tag...")
@@ -720,6 +731,16 @@ class DishManager(QWidget):
                         
         save_dishes(self.dishes)
         self.load_dish_list()
+        
+    def back_to_menu(self):
+        """Return to main menu"""
+        # Find the parent MainMenu window
+        parent = self.parent()
+        while parent and not hasattr(parent, 'show_menu'):
+            parent = parent.parent()
+        
+        if parent:
+            parent.show_menu()
 
 if __name__ == "__main__":
     from PyQt6.QtWidgets import QApplication
