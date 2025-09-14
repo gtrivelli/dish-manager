@@ -83,11 +83,11 @@ class SchedulerMainView(QWidget):
     def __init__(self, scheduler_parent=None):
         super().__init__()
         self.scheduler_parent = scheduler_parent
-        self.current_week_start = self.get_week_start(datetime.now())
+        self.current_start_date = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
         self.schedule_data = load_schedule()
         
         self.setup_ui()
-        self.load_week_data()
+        self.load_grid_data()
         
         # Cleanup old data on startup
         cleanup_old_ingredient_data()
@@ -109,37 +109,37 @@ class SchedulerMainView(QWidget):
         
         header_layout.addStretch()
         
-        # Week navigation
-        self.prev_week_button = QPushButton("◀ Previous Week")
-        self.prev_week_button.clicked.connect(self.previous_week)
-        header_layout.addWidget(self.prev_week_button)
+        # Day navigation
+        self.prev_day_button = QPushButton("◀ Previous Day")
+        self.prev_day_button.clicked.connect(self.previous_day)
+        header_layout.addWidget(self.prev_day_button)
         
-        self.week_label = QLabel()
-        self.week_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        self.week_label.setStyleSheet("font-size: 16px; font-weight: bold; color: #2c3e50; margin: 0 20px;")
-        header_layout.addWidget(self.week_label)
+        self.date_label = QLabel()
+        self.date_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.date_label.setStyleSheet("font-size: 16px; font-weight: bold; color: #2c3e50; margin: 0 20px;")
+        header_layout.addWidget(self.date_label)
         
-        self.next_week_button = QPushButton("Next Week ▶")
-        self.next_week_button.clicked.connect(self.next_week)
-        header_layout.addWidget(self.next_week_button)
+        self.next_day_button = QPushButton("Next Day ▶")
+        self.next_day_button.clicked.connect(self.next_day)
+        header_layout.addWidget(self.next_day_button)
         
-        # Update week label after buttons are created
-        self.update_week_label()
+        # Update date label after buttons are created
+        self.update_date_label()
         
         header_layout.addStretch()
         
         layout.addLayout(header_layout)
         
-        # Weekly grid
-        self.create_weekly_grid()
+        # Daily grid
+        self.create_daily_grid()
         layout.addWidget(self.grid_frame)
         
         layout.addStretch()
         
         self.setLayout(layout)
         
-    def create_weekly_grid(self):
-        """Create the weekly meal planning grid"""
+    def create_daily_grid(self):
+        """Create the daily meal planning grid showing 7 days starting from current_start_date"""
         self.grid_frame = QFrame()
         self.grid_frame.setProperty("class", "card")
         
@@ -151,17 +151,18 @@ class SchedulerMainView(QWidget):
         self.grid = QGridLayout()
         self.grid.setSpacing(5)
         
-        # Days of week headers
-        days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
-        today = datetime.now()
+        # Days headers - show 7 days starting from current_start_date
+        today = datetime.now().date()
         
-        for i, day in enumerate(days):
+        for i in range(7):
             # Calculate the date for this column
-            column_date = self.current_week_start + timedelta(days=i)
-            is_today = column_date.date() == today.date()
+            column_date = self.current_start_date + timedelta(days=i)
+            is_today = column_date.date() == today
             
             # Format day with date
-            day_with_date = f"{day}\n{column_date.strftime('%m/%d')}"
+            day_name = column_date.strftime("%A")
+            date_str = column_date.strftime("%m/%d")
+            day_with_date = f"{day_name}\n{date_str}"
             
             day_label = QLabel(day_with_date)
             day_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
@@ -218,7 +219,7 @@ class SchedulerMainView(QWidget):
             
             # Create cells for each day
             for col in range(7):
-                date = self.current_week_start + timedelta(days=col)
+                date = self.current_start_date + timedelta(days=col)
                 date_str = date.strftime("%Y-%m-%d")
                 
                 cell = SchedulerCell(date_str, meal_type.lower(), self)
@@ -230,55 +231,59 @@ class SchedulerMainView(QWidget):
         grid_layout.addLayout(self.grid)
         self.grid_frame.setLayout(grid_layout)
         
-    def get_week_start(self, date):
-        """Get the Monday of the week containing the given date"""
-        days_since_monday = date.weekday()
-        week_start = date - timedelta(days=days_since_monday)
-        return week_start.replace(hour=0, minute=0, second=0, microsecond=0)
         
-    def update_week_label(self):
-        """Update the week display label"""
-        week_end = self.current_week_start + timedelta(days=6)
-        start_str = self.current_week_start.strftime("%B %d")
-        end_str = week_end.strftime("%B %d, %Y")
-        self.week_label.setText(f"{start_str} - {end_str}")
+    def update_date_label(self):
+        """Update the date display label"""
+        range_end = self.current_start_date + timedelta(days=6)
+        start_str = self.current_start_date.strftime("%B %d")
+        end_str = range_end.strftime("%B %d, %Y")
+        self.date_label.setText(f"{start_str} - {end_str}")
         
-        # Limit navigation to 2 weeks ahead
-        today = datetime.now()
-        max_week = self.get_week_start(today + timedelta(weeks=2))
-        self.next_week_button.setEnabled(self.current_week_start < max_week)
+        # Limit navigation to 14 days ahead from today
+        today = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
+        max_date = today + timedelta(days=13)  # Allow up to 2 weeks ahead
+        self.next_day_button.setEnabled(self.current_start_date <= max_date)
         
-    def previous_week(self):
-        """Navigate to previous week"""
-        self.current_week_start -= timedelta(weeks=1)
-        self.update_week_label()
-        self.refresh_grid()
+        # Don't allow going before today
+        self.prev_day_button.setEnabled(self.current_start_date > today)
         
-    def next_week(self):
-        """Navigate to next week"""
-        self.current_week_start += timedelta(weeks=1)
-        self.update_week_label()
-        self.refresh_grid()
+    def previous_day(self):
+        """Navigate to previous day"""
+        today = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
+        if self.current_start_date > today:
+            self.current_start_date -= timedelta(days=1)
+            self.update_date_label()
+            self.refresh_grid()
+        
+    def next_day(self):
+        """Navigate to next day"""
+        today = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
+        max_date = today + timedelta(days=13)  # Allow up to 2 weeks ahead
+        if self.current_start_date <= max_date:
+            self.current_start_date += timedelta(days=1)
+            self.update_date_label()
+            self.refresh_grid()
         
     def refresh_grid(self):
-        """Refresh the grid with new week data"""
+        """Refresh the grid with new daily data"""
         # Clear all widgets from grid
         for i in reversed(range(self.grid.count())):
             child = self.grid.itemAt(i).widget()
             if child:
                 child.setParent(None)
         
-        # Recreate day headers
-        days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
-        today = datetime.now()
+        # Recreate day headers - show 7 days starting from current_start_date
+        today = datetime.now().date()
         
-        for i, day in enumerate(days):
+        for i in range(7):
             # Calculate the date for this column
-            column_date = self.current_week_start + timedelta(days=i)
-            is_today = column_date.date() == today.date()
+            column_date = self.current_start_date + timedelta(days=i)
+            is_today = column_date.date() == today
             
             # Format day with date
-            day_with_date = f"{day}\n{column_date.strftime('%m/%d')}"
+            day_name = column_date.strftime("%A")
+            date_str = column_date.strftime("%m/%d")
+            day_with_date = f"{day_name}\n{date_str}"
             
             day_label = QLabel(day_with_date)
             day_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
@@ -335,17 +340,17 @@ class SchedulerMainView(QWidget):
             
             # Create cells for each day
             for col in range(7):
-                date = self.current_week_start + timedelta(days=col)
+                date = self.current_start_date + timedelta(days=col)
                 date_str = date.strftime("%Y-%m-%d")
                 
                 cell = SchedulerCell(date_str, meal_type.lower(), self)
                 self.grid.addWidget(cell, row, col + 1)
                 self.cells[(date_str, meal_type.lower())] = cell
         
-        self.load_week_data()
+        self.load_grid_data()
         
-    def load_week_data(self):
-        """Load and display schedule data for current week"""
+    def load_grid_data(self):
+        """Load and display schedule data for current displayed dates"""
         schedule = self.schedule_data.get("schedule", {})
         
         for (date_str, meal_type), cell in self.cells.items():
@@ -541,7 +546,7 @@ class Scheduler(QWidget):
         """Switch back to scheduler view"""
         # Refresh the scheduler data
         self.scheduler_view.schedule_data = load_schedule()
-        self.scheduler_view.load_week_data()
+        self.scheduler_view.load_grid_data()
         
         # Switch to scheduler view
         self.stacked_widget.setCurrentWidget(self.scheduler_view)
